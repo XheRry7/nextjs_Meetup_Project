@@ -1,54 +1,72 @@
+import { MongoClient, ObjectId } from "mongodb";
+import { Fragment } from "react";
+import Head from "next/head";
 import MeetupDetail from "../../components/meetups/MeetupDetail";
 
 const MeetupDetails = (props) => {
   return (
-    <div>
-      <h1>asdasdsads</h1>
+    <Fragment>
+      <Head>
+        <title>{props.meetupData.title}</title>
+        <meta
+          name="description"
+          content={props.meetupData.description}
+        ></meta>
+      </Head>
       <MeetupDetail
-        image="https://media.istockphoto.com/photos/pakistan-monument-islamabad-picture-id535695503?k=20&m=535695503&s=612x612&w=0&h=S16wHXc-b3AkL7YMrcFkR2pDGFJA1bRsPmAfQlfrwkc="
-        title="first meetup"
-        description="sdfgbsdbfsdf"
-        address="fdsfsdfsdfsdfsd"
+        image={props.meetupData.image}
+        title={props.meetupData.title}
+        description={props.meetupData.description}
+        address={props.meetupData.address}
       />
-    </div>
+    </Fragment>
   );
 };
 
 export async function getStaticPaths() {
+  const client = await MongoClient.connect(
+    "mongodb+srv://shehryar:sheryx1744@cluster0.gqpr36i.mongodb.net/?retryWrites=true&w=majority"
+  );
+
+  const db = client.db();
+  const meetupsCollection = db.collection("meetups");
+  const meetups = await meetupsCollection.find({}, { _id: 1 }).toArray();
+  client.close();
   return {
     fallback: false,
-    paths: [
-      {
-        params: {
-          meetupId: "m1",
-        },
+    paths: meetups.map((e) => ({
+      params: {
+        meetupId: e._id.toString(),
       },
-      {
-        params: {
-          meetupId: "m2",
-        },
-      },
-    ],
+    })),
   };
 }
-
 export async function getStaticProps(context) {
   const meetupId = context.params.meetupId;
+
+  const client = await MongoClient.connect(
+    "mongodb+srv://shehryar:sheryx1744@cluster0.gqpr36i.mongodb.net/?retryWrites=true&w=majority"
+  );
+
+  const db = client.db();
+  const meetupsCollection = db.collection("meetups");
+  const meetups = await meetupsCollection.findOne({
+    _id: ObjectId(meetupId),
+  });
+  client.close();
 
   console.log(meetupId);
 
   return {
     props: {
       meetupData: {
-        id: meetupId,
-        image:
-          "https://media.istockphoto.com/photos/pakistan-monument-islamabad-picture-id535695503?k=20&m=535695503&s=612x612&w=0&h=S16wHXc-b3AkL7YMrcFkR2pDGFJA1bRsPmAfQlfrwkc=",
-        title: "first meetup",
-        description: "sdfgbsdbfsdf",
-        address: "fdsfsdfsdfsdfsd",
+        id: meetups._id.toString(),
+        title: meetups.title,
+        address: meetups.address,
+        image: meetups.image,
+        description: meetups.description,
       },
     },
   };
 }
-
 export default MeetupDetails;
